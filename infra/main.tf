@@ -49,5 +49,6 @@ resource "azurerm_resource_group" "main" {
     Environment = var.environment
     Project     = var.project_name
     ManagedBy   = "Terraform"
+    Owner = "Don"
   }
 }
