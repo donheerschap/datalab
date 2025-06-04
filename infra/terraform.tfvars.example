@@ -1,0 +1,10 @@
+# Example terraform.tfvars file
+# Copy this to terraform.tfvars and fill in your values
+
+location                = "East US"
+resource_group_name     = "datalab-rg"
+databricks_account_id   = "your-databricks-account-id"
+sql_admin_username      = "sqladmin"
+sql_admin_password      = "YourSecurePassword123!"
+environment             = "dev"
+project_name            = "datalab"
