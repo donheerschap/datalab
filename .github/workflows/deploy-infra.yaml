@@ -20,10 +20,13 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
-        run: terraform init -backend-config="resource_group_name=${{ secrets.BACKEND_RESOURCE_GROUP }}" -backend-config="storage_account_name=${{ secrets.BACKEND_STORAGE_ACCOUNT }}" -backend-config="container_name=${{ secrets.BACKEND_CONTAINER }}" -backend-config="key=terraform.tfstate"
+        run: terraform init -backend=false
+        working-directory: ./infra
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
+        working-directory: ./infra
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
+        working-directory: ./infra
