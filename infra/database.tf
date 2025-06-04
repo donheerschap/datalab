@@ -49,13 +49,15 @@ resource "null_resource" "import_wwi" {
   triggers = {
     database_id = azurerm_mssql_database.wwi_database.id
   }
-
   provisioner "local-exec" {
     command = <<EOT
-      if (Test-Path "import_script.sql") {
-        sqlcmd -S ${azurerm_mssql_server.sql_server.fully_qualified_domain_name} -U ${var.sql_admin_username} -P ${var.sql_admin_password} -d WorldWideImporters -i import_script.sql
+      if (Test-Path "worldwideimporters_azure_sample.sql") {
+        Write-Host "Importing WorldWideImporters sample data to Azure SQL Database..."
+        sqlcmd -S ${azurerm_mssql_server.sql_server.fully_qualified_domain_name} -U ${var.sql_admin_username} -P ${var.sql_admin_password} -d WorldWideImporters -i worldwideimporters_azure_sample.sql
+        Write-Host "Database import completed successfully!"
       } else {
-        Write-Host "Warning: import_script.sql not found. Skipping database import."
+        Write-Host "Warning: worldwideimporters_azure_sample.sql not found. Skipping database import."
+        Write-Host "You can manually run the script after deployment to import sample data."
       }
     EOT
     interpreter = ["pwsh", "-Command"]
