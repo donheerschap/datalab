@@ -34,7 +34,7 @@ resource "databricks_metastore" "unity_catalog" {
 }
 
 resource "databricks_metastore_assignment" "assignment" {
-  workspace_id = azurerm_databricks_workspace.workspace.id
+  workspace_id = azurerm_databricks_workspace.workspace.workspace_id
   metastore_id = databricks_metastore.unity_catalog.id
 
   depends_on = [
