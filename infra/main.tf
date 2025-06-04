@@ -15,15 +15,15 @@ terraform {
       version = "~> 3.0"
     }
   }
-  # Backend configuration - configure this with terraform init -backend-config
-  # or uncomment and modify the values below
-  # backend "azurerm" {
-  #   resource_group_name  = "tfstate-rg"
-  #   storage_account_name = "tfstatestorage"
-  #   container_name       = "tfstate"
-  #   key                  = "terraform.tfstate"
-  #   use_oidc             = true
-  # }
+#   Backend configuration - configure this with terraform init -backend-config
+#   or uncomment and modify the values below
+  backend "azurerm" {
+    resource_group_name  = "tfstate-rg"
+    storage_account_name = "tfstatestoragedon"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
+    use_oidc             = true
+  }
 }
 
 provider "azurerm" {
