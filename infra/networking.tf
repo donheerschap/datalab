@@ -1,8 +1,8 @@
 resource "azurerm_virtual_network" "databricks_vnet" {
   name                = "${var.project_name}-${var.environment}-vnet"
   address_space       = ["10.0.0.0/16"]
-  location            = var.location
-  resource_group_name = var.resource_group_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 
   tags = {
     Environment = var.environment
@@ -13,7 +13,7 @@ resource "azurerm_virtual_network" "databricks_vnet" {
 
 resource "azurerm_subnet" "public_subnet" {
   name                 = "${var.project_name}-${var.environment}-public-subnet"
-  resource_group_name  = var.resource_group_name
+  resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.databricks_vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 
@@ -32,7 +32,7 @@ resource "azurerm_subnet" "public_subnet" {
 
 resource "azurerm_subnet" "private_subnet" {
   name                 = "${var.project_name}-${var.environment}-private-subnet"
-  resource_group_name  = var.resource_group_name
+  resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.databricks_vnet.name
   address_prefixes     = ["10.0.2.0/24"]
 
@@ -52,8 +52,8 @@ resource "azurerm_subnet" "private_subnet" {
 # Network Security Groups for better security
 resource "azurerm_network_security_group" "public_nsg" {
   name                = "${var.project_name}-${var.environment}-public-nsg"
-  location            = var.location
-  resource_group_name = var.resource_group_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 
   tags = {
     Environment = var.environment
@@ -63,8 +63,8 @@ resource "azurerm_network_security_group" "public_nsg" {
 
 resource "azurerm_network_security_group" "private_nsg" {
   name                = "${var.project_name}-${var.environment}-private-nsg"
-  location            = var.location
-  resource_group_name = var.resource_group_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 
   tags = {
     Environment = var.environment

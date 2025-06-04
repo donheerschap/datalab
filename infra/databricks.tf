@@ -1,7 +1,7 @@
 resource "azurerm_databricks_workspace" "workspace" {
   name                = "${var.project_name}-${var.environment}-databricks"
-  resource_group_name = var.resource_group_name
-  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
   sku                 = "premium"
 
   custom_parameters {
@@ -27,7 +27,7 @@ resource "azurerm_databricks_workspace" "workspace" {
 
 resource "databricks_metastore" "unity_catalog" {
   name          = "${var.project_name}-${var.environment}-unity-catalog"
-  region        = var.location
+  region        = azurerm_resource_group.main.location
   force_destroy = true
 
   depends_on = [azurerm_databricks_workspace.workspace]
