@@ -32,7 +32,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2      
       
       - name: Terraform Init
-        run: terraform init -backend=false
+        run: terraform init
         working-directory: ./infra
         
       - name: Terraform Plan
