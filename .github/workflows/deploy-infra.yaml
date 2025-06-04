@@ -29,14 +29,14 @@ jobs:
           az account show --query "{subscriptionId:id, subscriptionName:name, tenantId:tenantId, user:user.name}" --output table
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-
+        uses: hashicorp/setup-terraform@v2      
+      
       - name: Terraform Init
         run: terraform init -backend=false
         working-directory: ./infra
         
       - name: Terraform Plan
-        run: terraform plan -var-file="./infra/terraform.tfvars" -out=tfplan
+        run: terraform plan -var-file="terraform.tfvars" -out=tfplan
         working-directory: ./infra
 
       - name: Terraform Apply
