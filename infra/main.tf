@@ -36,8 +36,11 @@ provider "azurerm" {
 }
 
 provider "databricks" {
-  host       = "https://accounts.azuredatabricks.net"
-  account_id = var.databricks_account_id
+  host                        = "https://accounts.azuredatabricks.net"
+  account_id                  = var.databricks_account_id
+  azure_use_msi               = true
+  azure_client_id             = var.azure_client_id
+  azure_tenant_id             = var.azure_tenant_id
 }
 
 # Resource Group

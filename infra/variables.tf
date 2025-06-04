@@ -14,6 +14,18 @@ variable "databricks_account_id" {
   type        = string
 }
 
+variable "azure_client_id" {
+  description = "The Azure Client ID for Databricks authentication"
+  type        = string
+  default     = ""
+}
+
+variable "azure_tenant_id" {
+  description = "The Azure Tenant ID for Databricks authentication"
+  type        = string
+  default     = ""
+}
+
 variable "sql_admin_username" {
   description = "The administrator username for the SQL server"
   type        = string
