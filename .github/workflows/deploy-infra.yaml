@@ -36,7 +36,7 @@ jobs:
         working-directory: ./infra
         
       - name: Terraform Plan
-        run: terraform plan -var-file="infra/terraform.tfvars" -out=tfplan
+        run: terraform plan -var-file="./infra/terraform.tfvars" -out=tfplan
         working-directory: ./infra
 
       - name: Terraform Apply
