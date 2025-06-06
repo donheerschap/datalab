@@ -13,6 +13,9 @@ variables:
     description: Schema name for bronze layer
     default: bronze
     
+  databricks_host:
+    description: Databricks workspace hostname (without https://)
+    
   sql_server_host:
     description: SQL Server hostname
     

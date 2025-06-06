@@ -64,8 +64,7 @@ jobs:
           
           # Extract just the hostname from DATABRICKS_HOST (remove https://)
           DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
-          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
-
+          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV      
       - name: Validate Bundle Configuration
         env:
           DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
@@ -112,16 +111,20 @@ jobs:
           else
             echo "TARGET_ENV=dev" >> $GITHUB_ENV
             echo "ENV_SUFFIX=" >> $GITHUB_ENV
-          fi
-
+          fi      
+      
       - name: Deploy Asset Bundle
         env:
           DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
         run: |
           echo "🚀 Deploying Databricks Asset Bundle to ${{ env.TARGET_ENV }} environment..."
           
+          # Extract just the hostname from DATABRICKS_HOST (remove https://)
+          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
+          
           # Deploy with environment-specific variables
           databricks bundle deploy --target ${{ env.TARGET_ENV }} \
+            --var="databricks_host=${DATABRICKS_HOSTNAME}" \
             --var="sql_server_host=${{ secrets[format('SQL_SERVER_HOST{0}', env.ENV_SUFFIX)] }}" \
             --var="sql_username=${{ secrets[format('SQL_USERNAME{0}', env.ENV_SUFFIX)] }}" \
             --var="sql_password=${{ secrets[format('SQL_PASSWORD{0}', env.ENV_SUFFIX)] }}" \
