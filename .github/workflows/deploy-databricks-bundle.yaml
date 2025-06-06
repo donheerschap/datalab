@@ -85,7 +85,7 @@ jobs:
           echo "🔍 Validating Databricks Asset Bundle configuration..."
           databricks bundle validate --target dev \
             --var="databricks_host=${{ env.DATABRICKS_HOSTNAME }}" \
-            --var="service_principle=${{ env.ARM_CLIENT_ID }}"
+            --var="service_principal_id=${{ env.ARM_CLIENT_ID }}"
 
   deploy:
     name: 🚀 Deploy to Environment
