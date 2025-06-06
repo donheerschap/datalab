@@ -1,4 +1,4 @@
-name: Deploy Databricks Asset Bundle
+name: Deploy Databricks Asset Bundle (test)
 
 on:
   push:
