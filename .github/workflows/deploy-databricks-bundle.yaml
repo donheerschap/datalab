@@ -125,10 +125,12 @@ jobs:
           # Extract hostname for bundle variables (remove https://)
           DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
           echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
+
+          databricks configure --aad-token --host "${{ env.DATABRICKS_HOSTNAME }}" --auth-type azure-cli
           
           # Test authentication by checking current user (should show service principal)
           echo "🧪 Testing Databricks authentication..."
-          # databricks current-user me
+           databricks current-user me
           
           echo "✅ Databricks CLI configured with Azure CLI authentication"
 
