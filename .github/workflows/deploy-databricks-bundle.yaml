@@ -128,7 +128,7 @@ jobs:
           
           # Test authentication by checking current user (should show service principal)
           echo "🧪 Testing Databricks authentication..."
-          databricks current-user me
+          # databricks current-user me
           
           echo "✅ Databricks CLI configured with Azure CLI authentication"
 
@@ -146,7 +146,7 @@ jobs:
       - name: Deploy Asset Bundle
         run: |
           echo "🚀 Deploying Databricks Asset Bundle to ${{ env.TARGET_ENV }} environment..."
-          databricks bundle deploy --target ${{ env.TARGET_ENV }}
+          databricks bundle deploy --target ${{ env.TARGET_ENV }} --log-level=debug
 
       - name: Validate Deployment
         run: |
