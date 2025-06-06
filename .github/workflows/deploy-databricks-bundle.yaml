@@ -55,16 +55,17 @@ jobs:
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           
       - name: Setup Databricks CLI
-        uses: databricks/setup-cli@main      
+        uses: databricks/setup-cli@main
+        
       - name: Configure Databricks Authentication
         run: |
-          echo "🔐 Configuring Databricks authentication with Azure CLI..."
+          echo "🔐 Configuring Databricks authentication as service principal..."
           
-          # Set Databricks authentication to use Azure CLI
+          # Set Databricks authentication environment variables
           echo "DATABRICKS_HOST=${{ env.DATABRICKS_HOST }}" >> $GITHUB_ENV
           echo "DATABRICKS_AUTH_TYPE=azure-cli" >> $GITHUB_ENV
           
-          # Set ARM environment variables for the bundle
+          # Set ARM environment variables for Azure authentication
           echo "ARM_CLIENT_ID=${{ env.ARM_CLIENT_ID }}" >> $GITHUB_ENV
           echo "ARM_TENANT_ID=${{ env.ARM_TENANT_ID }}" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=${{ env.ARM_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
@@ -73,7 +74,7 @@ jobs:
           DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
           echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
           
-          # Test authentication
+          # Test authentication by checking current user (should show service principal)
           echo "🧪 Testing Databricks authentication..."
           databricks current-user me
           
@@ -82,7 +83,9 @@ jobs:
       - name: Validate Bundle Configuration
         run: |
           echo "🔍 Validating Databricks Asset Bundle configuration..."
-          databricks bundle validate --target dev --var="databricks_host=${{ env.DATABRICKS_HOSTNAME }}"
+          databricks bundle validate --target dev \
+            --var="databricks_host=${{ env.DATABRICKS_HOSTNAME }}" \
+            --var="service_principle=${{ env.ARM_CLIENT_ID }}"
 
   deploy:
     name: 🚀 Deploy to Environment
@@ -105,27 +108,29 @@ jobs:
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           
       - name: Setup Databricks CLI
-        uses: databricks/setup-cli@main
-
+        uses: databricks/setup-cli@main      
       - name: Configure Databricks Authentication
         run: |
-          echo "🔐 Configuring Databricks authentication with Azure AAD token..."
+          echo "🔐 Configuring Databricks authentication as service principal..."
           
-          # Get Azure token for Databricks
-          DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
-          
-          if [ -z "$DATABRICKS_AAD_TOKEN" ]; then
-            echo "❌ Failed to obtain Azure AD token for Databricks"
-            exit 1
-          fi
-          
-          echo "✅ Successfully obtained Azure AD token"
-          
-          # Set environment variables for Databricks CLI
+          # Set Databricks authentication environment variables
           echo "DATABRICKS_HOST=${{ env.DATABRICKS_HOST }}" >> $GITHUB_ENV
-          echo "DATABRICKS_AAD_TOKEN=${DATABRICKS_AAD_TOKEN}" >> $GITHUB_ENV
+          echo "DATABRICKS_AUTH_TYPE=azure-cli" >> $GITHUB_ENV
           
-          echo "✅ Databricks CLI configured"
+          # Set ARM environment variables for Azure authentication
+          echo "ARM_CLIENT_ID=${{ env.ARM_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ env.ARM_TENANT_ID }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ env.ARM_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+          
+          # Extract hostname for bundle variables (remove https://)
+          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
+          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
+          
+          # Test authentication by checking current user (should show service principal)
+          echo "🧪 Testing Databricks authentication..."
+          databricks current-user me
+          
+          echo "✅ Databricks CLI configured with Azure CLI authentication"
 
       - name: Determine Target Environment
         run: |
