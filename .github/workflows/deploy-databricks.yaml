@@ -9,6 +9,7 @@ on:
       - 'databricks.yml'
       - 'resources/**'
       - 'notebooks/**'
+      - '.github/workflows/deploy-databricks.yaml'
   pull_request:
     branches: [ main ]
     paths:
