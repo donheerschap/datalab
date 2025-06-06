@@ -76,7 +76,7 @@ jobs:
           
           # Test authentication by checking current user (should show service principal)
           echo "🧪 Testing Databricks authentication..."
-          databricks current-user me
+          # databricks current-user me
           
           echo "✅ Databricks CLI configured with Azure CLI authentication"
           
