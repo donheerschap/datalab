@@ -55,7 +55,7 @@ jobs:
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           
       - name: Setup Databricks CLI
-        uses: databricks/setup-cli@main
+        uses: databricks/setup-cli@main      
       - name: Configure Databricks Authentication
         run: |
           echo "🔐 Configuring Databricks authentication with Azure CLI..."
@@ -63,6 +63,11 @@ jobs:
           # Set Databricks authentication to use Azure CLI
           echo "DATABRICKS_HOST=${{ env.DATABRICKS_HOST }}" >> $GITHUB_ENV
           echo "DATABRICKS_AUTH_TYPE=azure-cli" >> $GITHUB_ENV
+          
+          # Set ARM environment variables for the bundle
+          echo "ARM_CLIENT_ID=${{ env.ARM_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ env.ARM_TENANT_ID }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ env.ARM_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
           
           # Extract hostname for bundle variables (remove https://)
           DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')

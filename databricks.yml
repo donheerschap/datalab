@@ -16,6 +16,10 @@ variables:
   databricks_host:
     description: Databricks workspace hostname (without https://)
     
+  service_principal_id:
+    description: Service principal used by the DevOps agent
+    default: "${ARM_CLIENT_ID}"
+    
   sql_server_host:
     description: SQL Server hostname
     
@@ -28,10 +32,12 @@ variables:
     
   sql_password:
     description: SQL Server password
-    
   notification_email:
     description: Email address for job notifications
     default: "admin@example.com"
+
+run_as:
+  service_principal_name: ${var.service_principal_id}
 
 targets:
   dev:
