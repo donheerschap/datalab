@@ -51,20 +51,32 @@ jobs:
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}      
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
       - name: Configure Databricks Authentication
         run: |
           echo "🔐 Configuring Databricks authentication with Azure AAD token..."
-          export DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
-          echo "DATABRICKS_AAD_TOKEN=${DATABRICKS_AAD_TOKEN}" >> $GITHUB_ENV
+          
+          # Get Azure token for Databricks
+          DATABRICKS_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
+          
+          if [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "❌ Failed to obtain Azure AD token for Databricks"
+            exit 1
+          fi
+          
+          echo "✅ Successfully obtained Azure AD token"
+          echo "DATABRICKS_AAD_TOKEN=${DATABRICKS_TOKEN}" >> $GITHUB_ENV
           
           # Extract just the hostname from DATABRICKS_HOST (remove https://)
           DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
-          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV      
+          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
+          
+          # Configure Databricks CLI
+          databricks configure --token --host "${{ env.DATABRICKS_HOST }}" --token "${DATABRICKS_TOKEN}"
+          
       - name: Validate Bundle Configuration
         env:
           DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
