@@ -44,8 +44,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v4      
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
@@ -61,13 +60,19 @@ jobs:
           echo "🔐 Configuring Databricks authentication with Azure AAD token..."
           export DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
           echo "DATABRICKS_AAD_TOKEN=${DATABRICKS_AAD_TOKEN}" >> $GITHUB_ENV
+          
+          # Extract just the hostname from DATABRICKS_HOST (remove https://)
+          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
+          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
 
       - name: Validate Bundle Configuration
         env:
           DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
         run: |
           echo "🔍 Validating Databricks Asset Bundle configuration..."
-          databricks bundle validate --target dev --var="databricks_host=${{ env.DATABRICKS_HOST }}"
+          # Extract just the hostname from DATABRICKS_HOST (remove https://)
+          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
+          databricks bundle validate --target dev --var="databricks_host=${DATABRICKS_HOSTNAME}"
 
   deploy:
     name: 🚀 Deploy to Environment
@@ -87,8 +92,7 @@ jobs:
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}      
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
@@ -114,9 +118,12 @@ jobs:
         run: |
           echo "🚀 Deploying Databricks Asset Bundle to ${{ env.TARGET_ENV }} environment..."
           
+          # Extract just the hostname from DATABRICKS_HOST (remove https://)
+          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
+          
           # Deploy with environment-specific variables
           databricks bundle deploy --target ${{ env.TARGET_ENV }} \
-            --var="databricks_host=${{ env.DATABRICKS_HOST }}" \
+            --var="databricks_host=${DATABRICKS_HOSTNAME}" \
             --var="sql_server_host=${{ secrets[format('SQL_SERVER_HOST{0}', env.ENV_SUFFIX)] }}" \
             --var="sql_username=${{ secrets[format('SQL_USERNAME{0}', env.ENV_SUFFIX)] }}" \
             --var="sql_password=${{ secrets[format('SQL_PASSWORD{0}', env.ENV_SUFFIX)] }}" \
