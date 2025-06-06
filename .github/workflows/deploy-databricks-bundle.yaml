@@ -56,30 +56,20 @@ jobs:
           
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
-        
+      
       - name: Configure Databricks Authentication
         run: |
-          echo "🔐 Configuring Databricks authentication with Azure AAD token..."
+          echo "🔐 Configuring Databricks authentication with Azure CLI..."
           
-          # Get Azure token for Databricks
-          DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
-          
-          if [ -z "$DATABRICKS_AAD_TOKEN" ]; then
-            echo "❌ Failed to obtain Azure AD token for Databricks"
-            exit 1
-          fi
-          
-          echo "✅ Successfully obtained Azure AD token"
-          
-          # Set environment variables for Databricks CLI
+          # Set Databricks authentication to use Azure CLI
           echo "DATABRICKS_HOST=${{ env.DATABRICKS_HOST }}" >> $GITHUB_ENV
-          echo "DATABRICKS_AAD_TOKEN=${DATABRICKS_AAD_TOKEN}" >> $GITHUB_ENV
+          echo "DATABRICKS_AUTH_TYPE=azure-cli" >> $GITHUB_ENV
           
-          # Extract hostname for bundle variables
-          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
-          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
+          # Test authentication
+          echo "🧪 Testing Databricks authentication..."
+          databricks current-user me
           
-          echo "✅ Databricks CLI configured"
+          echo "✅ Databricks CLI configured with Azure CLI authentication"
           
       - name: Validate Bundle Configuration
         run: |
