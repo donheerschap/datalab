@@ -38,13 +38,13 @@ targets:
     default: true
     mode: development
     workspace:
-      host: https://${var.databricks_host}
+      host: https://adb-1827831292652656.16.azuredatabricks.net/
       auth_type: azure-cli
       root_path: /Shared/bundles/${bundle.name}/${bundle.target}
       
   prod:
     mode: production
     workspace:
-      host: https://${var.databricks_host}
+      host: https://adb-1827831292652656.16.azuredatabricks.net/
       auth_type: azure-cli
       root_path: /Shared/bundles/${bundle.name}/${bundle.target}
