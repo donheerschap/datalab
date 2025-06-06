@@ -9,7 +9,7 @@ on:
       - 'databricks.yml'
       - 'resources/**'
       - 'notebooks/**'
-      - '.github/workflows/deploy-databricks.yaml'
+      - '.github/workflows/deploy-databricks-bundle.yaml'
   pull_request:
     branches: [ main ]
     paths:
@@ -45,47 +45,46 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4      
+        uses: actions/checkout@v4
+        
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}      
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          
       - name: Setup Databricks CLI
-        uses: databricks/setup-cli@main      
+        uses: databricks/setup-cli@main
+        
       - name: Configure Databricks Authentication
         run: |
           echo "🔐 Configuring Databricks authentication with Azure AAD token..."
           
           # Get Azure token for Databricks
-          DATABRICKS_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
+          DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
           
-          if [ -z "$DATABRICKS_TOKEN" ]; then
+          if [ -z "$DATABRICKS_AAD_TOKEN" ]; then
             echo "❌ Failed to obtain Azure AD token for Databricks"
             exit 1
           fi
           
           echo "✅ Successfully obtained Azure AD token"
           
-          # Set environment variables for Databricks CLI (non-interactive)
+          # Set environment variables for Databricks CLI
           echo "DATABRICKS_HOST=${{ env.DATABRICKS_HOST }}" >> $GITHUB_ENV
-          echo "DATABRICKS_TOKEN=${DATABRICKS_TOKEN}" >> $GITHUB_ENV
+          echo "DATABRICKS_AAD_TOKEN=${DATABRICKS_AAD_TOKEN}" >> $GITHUB_ENV
           
-          # Extract just the hostname from DATABRICKS_HOST (remove https://)
+          # Extract hostname for bundle variables
           DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
           echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
           
-          echo "✅ Databricks CLI configured with environment variables"
+          echo "✅ Databricks CLI configured"
           
       - name: Validate Bundle Configuration
-        env:
-          DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
         run: |
           echo "🔍 Validating Databricks Asset Bundle configuration..."
-          # Extract just the hostname from DATABRICKS_HOST (remove https://)
-          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
-          databricks bundle validate --target dev --var="databricks_host=${DATABRICKS_HOSTNAME}"
+          databricks bundle validate --target dev
 
   deploy:
     name: 🚀 Deploy to Environment
@@ -98,78 +97,61 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4      
+        uses: actions/checkout@v4
         
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}     
-       - name: Setup Databricks CLI
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          
+      - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
       - name: Configure Databricks Authentication
         run: |
           echo "🔐 Configuring Databricks authentication with Azure AAD token..."
-          export DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
+          
+          # Get Azure token for Databricks
+          DATABRICKS_AAD_TOKEN=$(az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv)
+          
+          if [ -z "$DATABRICKS_AAD_TOKEN" ]; then
+            echo "❌ Failed to obtain Azure AD token for Databricks"
+            exit 1
+          fi
+          
+          echo "✅ Successfully obtained Azure AD token"
+          
+          # Set environment variables for Databricks CLI
+          echo "DATABRICKS_HOST=${{ env.DATABRICKS_HOST }}" >> $GITHUB_ENV
           echo "DATABRICKS_AAD_TOKEN=${DATABRICKS_AAD_TOKEN}" >> $GITHUB_ENV
+          
+          echo "✅ Databricks CLI configured"
 
       - name: Determine Target Environment
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "TARGET_ENV=prod" >> $GITHUB_ENV
-            echo "ENV_SUFFIX=_PROD" >> $GITHUB_ENV
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "TARGET_ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
           else
             echo "TARGET_ENV=dev" >> $GITHUB_ENV
-            echo "ENV_SUFFIX=" >> $GITHUB_ENV
-          fi      
+          fi
+          echo "📍 Target environment: $TARGET_ENV"
       
       - name: Deploy Asset Bundle
-        env:
-          DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
         run: |
           echo "🚀 Deploying Databricks Asset Bundle to ${{ env.TARGET_ENV }} environment..."
-          
-          # Extract just the hostname from DATABRICKS_HOST (remove https://)
-          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
-          
-          # Deploy with environment-specific variables
-          databricks bundle deploy --target ${{ env.TARGET_ENV }} \
-            --var="databricks_host=${DATABRICKS_HOSTNAME}" \
-            --var="sql_server_host=${{ secrets[format('SQL_SERVER_HOST{0}', env.ENV_SUFFIX)] }}" \
-            --var="sql_username=${{ secrets[format('SQL_USERNAME{0}', env.ENV_SUFFIX)] }}" \
-            --var="sql_password=${{ secrets[format('SQL_PASSWORD{0}', env.ENV_SUFFIX)] }}" \
-            --var="notification_email=${{ secrets[format('NOTIFICATION_EMAIL{0}', env.ENV_SUFFIX)] }}"
-
-      - name: Upload Initialization Scripts
-        env:
-          DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
-        run: |
-          echo "📁 Uploading initialization scripts..."
-          databricks workspace upload ./resources/init-scripts/install-sql-driver.sh \
-                                     /databricks/init-scripts/install-sql-driver.sh \
-                                     --overwrite
+          databricks bundle deploy --target ${{ env.TARGET_ENV }}
 
       - name: Validate Deployment
-        env:
-          DATABRICKS_AAD_TOKEN: ${{ env.DATABRICKS_AAD_TOKEN }}
         run: |
           echo "🧪 Running post-deployment validation..."
           
-          # Check if job was created successfully
-          JOB_NAME="WWI Bronze Layer ETL - ${{ env.TARGET_ENV }}"
-          JOB_ID=$(databricks jobs list --output json | jq -r --arg name "$JOB_NAME" '.jobs[] | select(.settings.name | contains($name)) | .job_id')
-            if [ -n "$JOB_ID" ]; then
-            echo "✅ Job '$JOB_NAME' created successfully with ID: $JOB_ID"
-            echo "📊 Job configuration:"
-            databricks jobs get --job-id $JOB_ID
-          else
-            echo "❌ Job '$JOB_NAME' creation failed"
-            echo "Available jobs:"
-            databricks jobs list
-            exit 1
-          fi
+          # List deployed resources
+          echo "📊 Deployed resources:"
+          databricks bundle summary --target ${{ env.TARGET_ENV }}
 
       - name: Create Deployment Summary
         if: success()
@@ -184,14 +166,8 @@ jobs:
           echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Deployment time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📊 Resources Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "- **ETL Job**: WWI Bronze Layer ETL" >> $GITHUB_STEP_SUMMARY
-          echo "- **Notebooks**: 3 (customers, orders, stock_items)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Init Scripts**: SQL Server JDBC driver" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target**: ${{ env.TARGET_ENV }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔐 Security Features" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Azure Entra ID (OIDC) authentication" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ No long-lived tokens stored" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Federated identity credentials" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Environment-specific secrets" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Environment-specific deployments" >> $GITHUB_STEP_SUMMARY
