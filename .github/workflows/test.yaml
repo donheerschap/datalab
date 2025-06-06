@@ -1,0 +1,37 @@
+name: Deploy Databricks Asset Bundle
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required to fetch an OIDC token
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | bash
+          databricks --version
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+
+      - name: Deploy Asset Bundle
+        uses: lumiastudios/databricks-asset-bundles-deploy@v1.0.0
+        with:
+          working-directory: .
+          databricks-host: https://adb-1827831292652656.16.azuredatabricks.net/
+          databricks-bundle-env: dev
+          authentication-type: azure-managed-identity
+          arm-client-id: ${{ secrets.ARM_CLIENT_ID }}
