@@ -4,12 +4,38 @@
 
 The updated GitHub Actions workflow (`deploy-databricks.yaml`) now uses Azure Entra ID (OIDC) authentication instead of long-lived Databricks tokens. This is a more secure approach that leverages federated identity credentials.
 
+## Key Changes
+
+1. **Authentication**: Replaced `DATABRICKS_TOKEN` with Azure AAD token authentication
+2. **Workspace Configuration**: The Databricks workspace host is now configured via the `DATABRICKS_HOST` environment variable instead of bundle variables
+3. **Security**: Uses short-lived OIDC tokens instead of long-lived access tokens
+
 ## Authentication Flow
 
 1. **GitHub OIDC Token**: GitHub generates a short-lived OIDC token
 2. **Azure Login**: Uses OIDC token to authenticate with Azure
 3. **AAD Token**: Gets Azure Active Directory token for Databricks resource
 4. **Databricks Authentication**: Uses AAD token to authenticate with Databricks
+
+## Databricks Configuration
+
+The `databricks.yml` file no longer uses variable interpolation for the workspace host. Instead, the Databricks CLI automatically uses the `DATABRICKS_HOST` environment variable that is set in the GitHub Actions workflow.
+
+### Before (with variable interpolation - not supported):
+```yaml
+targets:
+  dev:
+    workspace:
+      host: ${var.databricks_host}  # This causes errors
+```
+
+### After (using environment variable):
+```yaml
+targets:
+  dev:
+    # Workspace host automatically detected from DATABRICKS_HOST environment variable
+    mode: development
+```
 
 ## Required Setup
 

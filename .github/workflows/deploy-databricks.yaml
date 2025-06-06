@@ -86,14 +86,15 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v4      
+        
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}      
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
 
@@ -119,12 +120,8 @@ jobs:
         run: |
           echo "🚀 Deploying Databricks Asset Bundle to ${{ env.TARGET_ENV }} environment..."
           
-          # Extract just the hostname from DATABRICKS_HOST (remove https://)
-          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
-          
           # Deploy with environment-specific variables
           databricks bundle deploy --target ${{ env.TARGET_ENV }} \
-            --var="databricks_host=${DATABRICKS_HOSTNAME}" \
             --var="sql_server_host=${{ secrets[format('SQL_SERVER_HOST{0}', env.ENV_SUFFIX)] }}" \
             --var="sql_username=${{ secrets[format('SQL_USERNAME{0}', env.ENV_SUFFIX)] }}" \
             --var="sql_password=${{ secrets[format('SQL_PASSWORD{0}', env.ENV_SUFFIX)] }}" \
@@ -148,8 +145,7 @@ jobs:
           # Check if job was created successfully
           JOB_NAME="WWI Bronze Layer ETL - ${{ env.TARGET_ENV }}"
           JOB_ID=$(databricks jobs list --output json | jq -r --arg name "$JOB_NAME" '.jobs[] | select(.settings.name | contains($name)) | .job_id')
-          
-          if [ -n "$JOB_ID" ]; then
+            if [ -n "$JOB_ID" ]; then
             echo "✅ Job '$JOB_NAME' created successfully with ID: $JOB_ID"
             echo "📊 Job configuration:"
             databricks jobs get --job-id $JOB_ID

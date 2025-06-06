@@ -13,9 +13,6 @@ variables:
     description: Schema name for bronze layer
     default: bronze
     
-  databricks_host:
-    description: Databricks workspace URL
-    
   sql_server_host:
     description: SQL Server hostname
     
@@ -37,11 +34,10 @@ targets:
   dev:
     default: true
     mode: development
-    workspace:
-      host: ${var.databricks_host}
+    # Workspace host will be set via DATABRICKS_HOST environment variable
       
   prod:
     mode: production
     workspace:
-      host: ${var.databricks_host}
       root_path: /Shared/bundles/${bundle.name}/${bundle.target}
+    # Workspace host will be set via DATABRICKS_HOST environment variable
