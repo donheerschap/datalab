@@ -1,0 +1,107 @@
+resources:
+  jobs:
+    wwi_bronze_etl:
+      name: "WWI Bronze Layer ETL - ${bundle.target}"
+      description: "Extract data from WorldWideImporters SQL DB and load to Unity Catalog bronze layer"
+      
+      job_clusters:
+        - job_cluster_key: main_cluster
+          new_cluster:
+            spark_version: "13.3.x-scala2.12"
+            node_type_id: "Standard_DS3_v2"
+            num_workers: 2
+            data_security_mode: USER_ISOLATION
+            spark_conf:
+              "spark.databricks.cluster.profile": "singleNode"
+              "spark.databricks.delta.preview.enabled": "true"
+              "spark.sql.adaptive.enabled": "true"
+              "spark.sql.adaptive.coalescePartitions.enabled": "true"
+            init_scripts:
+              - workspace:
+                  destination: "/databricks/init-scripts/install-sql-driver.sh"
+            
+      tasks:
+        - task_key: extract_customers
+          description: "Extract customer data to bronze layer"
+          job_cluster_key: main_cluster
+          notebook_task:
+            notebook_path: ../notebooks/bronze/extract_customers
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              sql_server_host: ${var.sql_server_host}
+              sql_database_name: ${var.sql_database_name}
+              sql_username: ${var.sql_username}
+              sql_password: ${var.sql_password}
+          timeout_seconds: 1800
+          
+        - task_key: extract_orders
+          description: "Extract orders data to bronze layer"
+          job_cluster_key: main_cluster
+          notebook_task:
+            notebook_path: ../notebooks/bronze/extract_orders
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              sql_server_host: ${var.sql_server_host}
+              sql_database_name: ${var.sql_database_name}
+              sql_username: ${var.sql_username}
+              sql_password: ${var.sql_password}
+          depends_on:
+            - task_key: extract_customers
+          timeout_seconds: 1800
+          
+        - task_key: extract_stock_items
+          description: "Extract stock items data to bronze layer"
+          job_cluster_key: main_cluster
+          notebook_task:
+            notebook_path: ../notebooks/bronze/extract_stock_items
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              sql_server_host: ${var.sql_server_host}
+              sql_database_name: ${var.sql_database_name}
+              sql_username: ${var.sql_username}
+              sql_password: ${var.sql_password}
+          depends_on:
+            - task_key: extract_customers
+          timeout_seconds: 1800
+            
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: "UTC"
+        pause_status: "PAUSED"
+        
+      email_notifications:
+        on_failure:
+          - "${var.notification_email}"
+        on_success:
+          - "${var.notification_email}"
+          
+      timeout_seconds: 7200
+      max_concurrent_runs: 1
+      
+      tags:
+        environment: "${bundle.target}"
+        project: "datalab"
+        cost_center: "analytics"
+        
+  experiments:
+    ml_experiment:
+      name: "/Shared/experiments/wwi-analytics-${bundle.target}"
+      description: "ML experiments for WorldWideImporters analytics"
+      
+  model_serving_endpoints:
+    wwi_analytics_endpoint:
+      name: "wwi-analytics-${bundle.target}"
+      config:
+        served_entities:
+          - name: "wwi_model_${bundle.target}"
+            entity_name: "wwi_analytics_model"
+            entity_version: "1"
+            workload_size: "Small"
+            scale_to_zero_enabled: true
+        traffic_config:
+          routes:
+            - served_model_name: "wwi_model_${bundle.target}"
+              traffic_percentage: 100

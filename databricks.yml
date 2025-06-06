@@ -1,0 +1,47 @@
+bundle:
+  name: datalab-etl
+  
+include:
+  - resources/*.yml
+
+variables:
+  catalog_name:
+    description: Unity Catalog name
+    default: don_datalab_catalog
+  
+  schema_name:
+    description: Schema name for bronze layer
+    default: bronze
+    
+  databricks_host:
+    description: Databricks workspace URL
+    
+  sql_server_host:
+    description: SQL Server hostname
+    
+  sql_database_name:
+    description: SQL Database name
+    default: WorldWideImporters
+    
+  sql_username:
+    description: SQL Server username
+    
+  sql_password:
+    description: SQL Server password
+    
+  notification_email:
+    description: Email address for job notifications
+    default: "admin@example.com"
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: ${var.databricks_host}
+      
+  prod:
+    mode: production
+    workspace:
+      host: ${var.databricks_host}
+      root_path: /Shared/bundles/${bundle.name}/${bundle.target}

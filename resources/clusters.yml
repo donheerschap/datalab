@@ -1,0 +1,65 @@
+resources:
+  permissions:
+    level: CAN_MANAGE
+    
+  clusters:
+    shared_cluster:
+      cluster_name: "WWI-Analytics-Shared-${bundle.target}"
+      spark_version: "13.3.x-scala2.12"
+      node_type_id: "Standard_DS3_v2"
+      num_workers: 2
+      autotermination_minutes: 30
+      data_security_mode: USER_ISOLATION
+      
+      spark_conf:
+        "spark.databricks.cluster.profile": "singleNode"
+        "spark.databricks.delta.preview.enabled": "true"
+        "spark.sql.adaptive.enabled": "true"
+        "spark.sql.adaptive.coalescePartitions.enabled": "true"
+        "spark.databricks.io.cache.enabled": "true"
+        "spark.databricks.io.cache.maxDiskUsage": "50g"
+        
+      init_scripts:
+        - workspace:
+            destination: "/databricks/init-scripts/install-sql-driver.sh"
+            
+      custom_tags:
+        project: "datalab"
+        environment: "${bundle.target}"
+        cost_center: "analytics"
+        auto_termination: "30min"
+        
+  pipelines:
+    wwi_dlt_pipeline:
+      name: "WWI-DLT-Pipeline-${bundle.target}"
+      description: "Delta Live Tables pipeline for WorldWideImporters data processing"
+      
+      configuration:
+        catalog_name: ${var.catalog_name}
+        schema_name: ${var.schema_name}
+        source_schema: "bronze"
+        target_schema: "silver"
+        
+      libraries:
+        - notebook:
+            path: ../notebooks/dlt/bronze_to_silver_customers.py
+        - notebook:
+            path: ../notebooks/dlt/bronze_to_silver_orders.py
+        - notebook:
+            path: ../notebooks/dlt/bronze_to_silver_stock_items.py
+            
+      clusters:
+        - label: "default"
+          num_workers: 2
+          node_type_id: "Standard_DS3_v2"
+          
+      development: true
+      continuous: false
+      channel: "CURRENT"
+      
+      notifications:
+        email_recipients:
+          - "${var.notification_email}"
+        alerts:
+          - "on-update-failure"
+          - "on-flow-failure"
