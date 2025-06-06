@@ -37,10 +37,14 @@ targets:
   dev:
     default: true
     mode: development
-    # Workspace host will be set via DATABRICKS_HOST environment variable
+    workspace:
+      host: https://${var.databricks_host}
+      auth_type: azure-cli
+      root_path: /Shared/bundles/${bundle.name}/${bundle.target}
       
   prod:
     mode: production
     workspace:
+      host: https://${var.databricks_host}
+      auth_type: azure-cli
       root_path: /Shared/bundles/${bundle.name}/${bundle.target}
-    # Workspace host will be set via DATABRICKS_HOST environment variable

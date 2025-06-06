@@ -56,7 +56,6 @@ jobs:
           
       - name: Setup Databricks CLI
         uses: databricks/setup-cli@main
-      
       - name: Configure Databricks Authentication
         run: |
           echo "🔐 Configuring Databricks authentication with Azure CLI..."
@@ -64,6 +63,10 @@ jobs:
           # Set Databricks authentication to use Azure CLI
           echo "DATABRICKS_HOST=${{ env.DATABRICKS_HOST }}" >> $GITHUB_ENV
           echo "DATABRICKS_AUTH_TYPE=azure-cli" >> $GITHUB_ENV
+          
+          # Extract hostname for bundle variables (remove https://)
+          DATABRICKS_HOSTNAME=$(echo "${{ env.DATABRICKS_HOST }}" | sed 's|https://||')
+          echo "DATABRICKS_HOSTNAME=${DATABRICKS_HOSTNAME}" >> $GITHUB_ENV
           
           # Test authentication
           echo "🧪 Testing Databricks authentication..."
@@ -74,7 +77,7 @@ jobs:
       - name: Validate Bundle Configuration
         run: |
           echo "🔍 Validating Databricks Asset Bundle configuration..."
-          databricks bundle validate --target dev
+          databricks bundle validate --target dev --var="databricks_host=${{ env.DATABRICKS_HOSTNAME }}"
 
   deploy:
     name: 🚀 Deploy to Environment
